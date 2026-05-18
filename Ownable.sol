@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// Fixed import path to use the official OpenZeppelin library
-import "@openzeppelin/contracts/utils/Context.sol";
+// Apnar repo-te thaka local Context.sol fileটি import kora holo
+import "./Context.sol";
 
 abstract contract Ownable is Context {
     address private _owner;
