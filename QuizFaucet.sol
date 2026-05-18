@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// Directly importing from official OpenZeppelin GitHub to fix the 404 error
+// Fixed official OpenZeppelin paths to resolve the 404 error
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// Interface adjustment to call the custom mint function of your QuizToken
+// Interface wrapper to correctly call your QuizToken's custom mint function
 interface IMintableERC20 is IERC20 {
     function mint(address to, uint256 amount) external;
 }
 
 contract QuizFaucet is Ownable {
     IMintableERC20 public token;
-    uint256 public rewardAmount = 10 * 10**18; // 10 tokens as reward
+    uint256 public rewardAmount = 10 * 10**18; // 10 tokens reward
     uint256 public cooldownTime = 1 days; // 24-hour cooldown
 
     struct Quiz {
         string question;
-        bytes32 answerHash; // Hash of the correct answer for security
+        bytes32 answerHash; // Hashed for security
     }
 
     Quiz[] private quizzes;
@@ -29,7 +29,7 @@ contract QuizFaucet is Ownable {
 
     // Allows the contract owner to add a new quiz question securely
     function addQuiz(string memory _question, string memory _answer) external onlyOwner {
-        // Using standard abi.encode instead of encodePacked to prevent hash collisions
+        // Standard abi.encode used to prevent hash collisions
         bytes32 hash = keccak256(abi.encode(_answer));
         quizzes.push(Quiz(_question, hash));
     }
@@ -44,7 +44,7 @@ contract QuizFaucet is Ownable {
 
         lastClaimTime[msg.sender] = block.timestamp;
         
-        // This will now successfully call your QuizToken's mint function
+        // Calls your QuizToken's mint function safely
         token.mint(msg.sender, rewardAmount);
     }
 
