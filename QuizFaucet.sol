@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./IERC20.sol";
-import "./Ownable.sol";
+// Directly importing from official OpenZeppelin GitHub to fix the 404 error
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+// Interface adjustment to call the custom mint function of your QuizToken
+interface IMintableERC20 is IERC20 {
+    function mint(address to, uint256 amount) external;
+}
 
 contract QuizFaucet is Ownable {
-    IERC20 public token;
+    IMintableERC20 public token;
     uint256 public rewardAmount = 10 * 10**18; // 10 tokens as reward
     uint256 public cooldownTime = 1 days; // 24-hour cooldown
 
@@ -18,12 +24,13 @@ contract QuizFaucet is Ownable {
     mapping(address => uint256) public lastClaimTime;
 
     constructor(address _tokenAddress) Ownable(msg.sender) {
-        token = IERC20(_tokenAddress);
+        token = IMintableERC20(_tokenAddress);
     }
 
-    // Allows the contract owner to add a new quiz question
+    // Allows the contract owner to add a new quiz question securely
     function addQuiz(string memory _question, string memory _answer) external onlyOwner {
-        bytes32 hash = keccak256(abi.encodePacked(_answer));
+        // Using standard abi.encode instead of encodePacked to prevent hash collisions
+        bytes32 hash = keccak256(abi.encode(_answer));
         quizzes.push(Quiz(_question, hash));
     }
 
@@ -31,11 +38,13 @@ contract QuizFaucet is Ownable {
     function claimReward(uint256 _quizId, string memory _answer) external {
         require(block.timestamp >= lastClaimTime[msg.sender] + cooldownTime, "Cooldown active. Try again tomorrow!");
         require(_quizId < quizzes.length, "Invalid Quiz ID");
-        
-        bytes32 inputHash = keccak256(abi.encodePacked(_answer));
+
+        bytes32 inputHash = keccak256(abi.encode(_answer));
         require(inputHash == quizzes[_quizId].answerHash, "Incorrect answer! Try again.");
 
         lastClaimTime[msg.sender] = block.timestamp;
+        
+        // This will now successfully call your QuizToken's mint function
         token.mint(msg.sender, rewardAmount);
     }
 
@@ -47,6 +56,7 @@ contract QuizFaucet is Ownable {
 
     // View function to get total number of quizzes available
     function getQuizCount() external view returns (uint256) {
+        require(quizzes.length > 0, "No quizzes available yet");
         return quizzes.length;
     }
 }
